@@ -77,13 +77,29 @@ public class XMLConfigBuilder extends BaseBuilder {
     this(inputStream, environment, null);
   }
 
+  /**
+   * 构造方法，SqlSessionFactoryBuilder创建XMLConfigBuilder来创建一个Configuration对象
+   * @param inputStream 配置文件输入流
+   * @param environment 环境属性
+   * @param props 属性信息
+   */
   public XMLConfigBuilder(InputStream inputStream, String environment, Properties props) {
     this(new XPathParser(inputStream, true, props, new XMLMapperEntityResolver()), environment, props);
   }
 
+  /**
+   * 私有的构造XMLConfigBuilder的方法，所有构造XMLConfigBuilder的方法，最终都调用到该方法，是java多态的一种表现
+   * @param parser XPathParser 对象
+   * @param environment 环境信息
+   * @param props 属性信息
+   */
   private XMLConfigBuilder(XPathParser parser, String environment, Properties props) {
+    //该类继承自BaseBuilder，此处调用父类的构造方法，来初始化信息，主要是获得一个configuration, typeAliasRegister, typeHandlerRegister三个数据
+    //其中typeAliasRegister, typeHandlerRegister在configuration对象中构造而成，暂时不去跟踪
     super(new Configuration());
+    //使用ThreadLocal来保存一个ErrorContext，此处暂时不追究该类是做什么操作的
     ErrorContext.instance().resource("SQL Mapper Configuration");
+    //一些赋值操作
     this.configuration.setVariables(props);
     this.parsed = false;
     this.environment = environment;
@@ -91,10 +107,13 @@ public class XMLConfigBuilder extends BaseBuilder {
   }
 
   public Configuration parse() {
+    //parsed用来标记，Configuration是否被分析创建过
+    //该值默认为false，执行该方法之后，该值设置为true，所以Configuration类为单例模式
     if (parsed) {
       throw new BuilderException("Each XMLConfigBuilder can only be used once.");
     }
     parsed = true;
+    //该方法来解析configuration配置文件 parser.evalNode方法从xml文档对象中，根据表达式来获取一个XNode对象（实际上相当于XML文件的解析）
     parseConfiguration(parser.evalNode("/configuration"));
     return configuration;
   }
@@ -102,20 +121,29 @@ public class XMLConfigBuilder extends BaseBuilder {
   private void parseConfiguration(XNode root) {
     try {
       //issue #117 read properties first
+      //git issue id 117 先读取properties信息
       propertiesElement(root.evalNode("properties"));
+      //读取xml settings信息
       Properties settings = settingsAsProperties(root.evalNode("settings"));
       loadCustomVfs(settings);
       loadCustomLogImpl(settings);
+      //获取自定义的typeAliases
       typeAliasesElement(root.evalNode("typeAliases"));
+      //获取自定义的插件信息
       pluginElement(root.evalNode("plugins"));
       objectFactoryElement(root.evalNode("objectFactory"));
       objectWrapperFactoryElement(root.evalNode("objectWrapperFactory"));
       reflectorFactoryElement(root.evalNode("reflectorFactory"));
       settingsElement(settings);
       // read it after objectFactory and objectWrapperFactory issue #631
+      //在读取objectFactory 和 objectWrapperFactory之后，加载下面的东西
+      //读取环境变量
       environmentsElement(root.evalNode("environments"));
+      //读取数据源提供厂商
       databaseIdProviderElement(root.evalNode("databaseIdProvider"));
+      //读取自定义的typeHandlers
       typeHandlerElement(root.evalNode("typeHandlers"));
+      //读取mappers文件（那么猜测，在这个里面会有往configuration里面addMapper的方法）
       mapperElement(root.evalNode("mappers"));
     } catch (Exception e) {
       throw new BuilderException("Error parsing SQL Mapper Configuration. Cause: " + e, e);
@@ -357,13 +385,19 @@ public class XMLConfigBuilder extends BaseBuilder {
     }
   }
 
+  /**
+   * 私有方法，获取xml中mapper标签的内容
+   * @param parent
+   * @throws Exception
+   */
   private void mapperElement(XNode parent) throws Exception {
     if (parent != null) {
+      //循环标签下的内容
       for (XNode child : parent.getChildren()) {
-        if ("package".equals(child.getName())) {
+        if ("package".equals(child.getName())) { //如果是package 包名配置，那么就要根据package来加载Mappers
           String mapperPackage = child.getStringAttribute("name");
           configuration.addMappers(mapperPackage);
-        } else {
+        } else { //否则的话，根据resource，url，class来加载mapper 这些内容暂时先不考虑
           String resource = child.getStringAttribute("resource");
           String url = child.getStringAttribute("url");
           String mapperClass = child.getStringAttribute("class");

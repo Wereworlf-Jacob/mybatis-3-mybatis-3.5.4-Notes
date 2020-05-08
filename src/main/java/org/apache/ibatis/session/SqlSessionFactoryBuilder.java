@@ -60,6 +60,13 @@ public class SqlSessionFactoryBuilder {
     }
   }
 
+  /**
+   * Mybatis的其中一个入口，通过SqlSessionFactoryBuilder，读取mybatis.xml配置文件流
+   * 然后来创建一个SqlSesseionFactory,此处使用的是java多态
+   * 封装一个统一的build方法，然后通过参数控制，可以灵活调用方法
+   * @param inputStream
+   * @return
+   */
   public SqlSessionFactory build(InputStream inputStream) {
     return build(inputStream, null, null);
   }
@@ -72,9 +79,18 @@ public class SqlSessionFactoryBuilder {
     return build(inputStream, null, properties);
   }
 
+  /**
+   * 通过IO流，读取配置文件，环境属性和参数属性，来构造一个SqlSessionFactory
+   * @param inputStream
+   * @param environment
+   * @param properties
+   * @return
+   */
   public SqlSessionFactory build(InputStream inputStream, String environment, Properties properties) {
     try {
+      //因为配置文件是一个xml文件，所以此处使用XMLConfigBuilder来创建一个configuration配置类
       XMLConfigBuilder parser = new XMLConfigBuilder(inputStream, environment, properties);
+      //获取一个XMLConfigBuilder主要是来构建一个configuration对象，所以此处调用建造器的parse方法来生成一个configuration对象
       return build(parser.parse());
     } catch (Exception e) {
       throw ExceptionFactory.wrapException("Error building SqlSession.", e);

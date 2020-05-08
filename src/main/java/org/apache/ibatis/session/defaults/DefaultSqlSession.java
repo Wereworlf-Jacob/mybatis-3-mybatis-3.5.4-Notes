@@ -286,8 +286,10 @@ public class DefaultSqlSession implements SqlSession {
     return configuration;
   }
 
+  //传过来一个Mapper Class类，然后返回一个该类的实体
   @Override
   public <T> T getMapper(Class<T> type) {
+    //从配置信息中获取该mapper对象
     return configuration.getMapper(type, this);
   }
 

@@ -122,6 +122,13 @@ public class XPathParser {
     this.document = createDocument(new InputSource(reader));
   }
 
+  /**
+   * 通过XPathParse来构建一个XmlConfigBuilder对象
+   * @param inputStream 配置文件输入流
+   * @param validation 通过SqlSessionFactoryBuilder(FileInputStream)方法来构建，该值为true
+   * @param variables 属性信息
+   * @param entityResolver entityResolver对象，通过SqlSessionFactoryBuilder(FileInputStream)构建时使用 XmlMapperEntityResolver
+   */
   public XPathParser(InputStream inputStream, boolean validation, Properties variables, EntityResolver entityResolver) {
     commonConstructor(validation, variables, entityResolver);
     this.document = createDocument(new InputSource(inputStream));
@@ -227,9 +234,18 @@ public class XPathParser {
     }
   }
 
+  /**
+   * 私有的根据inputSource来构建一个Document文档对象（猜测是根据xml配置文件，转成一个文档对象然后用来取值）
+   * @param inputSource
+   * @return
+   */
   private Document createDocument(InputSource inputSource) {
     // important: this must only be called AFTER common constructor
+    //重要提示：这个方法必须且只能在调用common constructor 方法之后再调用
     try {
+      //这个地方使用建造者模式+简单工厂模式，DocumentBuilderFactory 只负责来创建DocumentBuilder建造类
+      //然后再由DocumentBuilder来创建一个Document对象
+      //该工厂是如何创建出来的咱不理会2020-05-08
       DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
       factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
       factory.setValidating(validation);
@@ -264,7 +280,14 @@ public class XPathParser {
     }
   }
 
+  /**
+   * 私有的该类公用的构造方法，所有构造XPathParser的方法，最终都会调到这个方法
+   * @param validation 是否验证
+   * @param variables 属性值
+   * @param entityResolver entityResolver对象
+   */
   private void commonConstructor(boolean validation, Properties variables, EntityResolver entityResolver) {
+    //各种赋值，暂时不去理会里面去干了什么 2020-05-08
     this.validation = validation;
     this.entityResolver = entityResolver;
     this.variables = variables;

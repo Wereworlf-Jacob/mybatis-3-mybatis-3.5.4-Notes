@@ -25,7 +25,9 @@ import org.apache.ibatis.executor.BatchResult;
 
 /**
  * The primary Java interface for working with MyBatis.
+ * 使用Mybatis的主要java接口（此处working应该翻译成操作相关的语义）
  * Through this interface you can execute commands, get mappers and manage transactions.
+ * 通过这个接口你可以执行命令，获取映射信息以及管理事务
  *
  * @author Clinton Begin
  */
@@ -33,46 +35,62 @@ public interface SqlSession extends Closeable {
 
   /**
    * Retrieve a single row mapped from the statement key.
-   * @param <T> the returned object type
+   * my：通过statement key，获取一行映射结果数据
+   * translation: 检索从语句键映射的单行
+   * @param <T> the returned object type 返回的对象类型
    * @param statement
-   * @return Mapped object
+   * @return Mapped object 映射的结果对象
    */
   <T> T selectOne(String statement);
 
   /**
    * Retrieve a single row mapped from the statement key and parameter.
-   * @param <T> the returned object type
+   * 检索从语句键和参数映射的单行
+   * @param <T> the returned object type 返回的对象类型
    * @param statement Unique identifier matching the statement to use.
+   *                  与要使用的语句匹配的唯一标识符（主键标志）
    * @param parameter A parameter object to pass to the statement.
-   * @return Mapped object
+   *                  要传递到语句中的参数对象
+   * @return Mapped object 映射对象
    */
   <T> T selectOne(String statement, Object parameter);
 
   /**
    * Retrieve a list of mapped objects from the statement key and parameter.
-   * @param <E> the returned list element type
+   * 检索从语句键和参数映射对象的列表
+   * @param <E> the returned list element type 返回列表元素的类型
    * @param statement Unique identifier matching the statement to use.
+   *                  与要使用的语句匹配的唯一标识符
    * @return List of mapped object
    */
   <E> List<E> selectList(String statement);
 
   /**
    * Retrieve a list of mapped objects from the statement key and parameter.
+   * 通过语句键和参数检索出一个映射对象的列表
    * @param <E> the returned list element type
+   *           返回的列表元素类型
    * @param statement Unique identifier matching the statement to use.
+   *                  与要使用的语句匹配的唯一标识符
    * @param parameter A parameter object to pass to the statement.
-   * @return List of mapped object
+   *                  要传递给语句的参数对象
+   * @return List of mapped object 映射对象列表
    */
   <E> List<E> selectList(String statement, Object parameter);
 
   /**
    * Retrieve a list of mapped objects from the statement key and parameter,
    * within the specified row bounds.
+   * 在指定的行边界内，从语句键和参数中检索映射对象的列表
    * @param <E> the returned list element type
+   *           返回的列表元素类型
    * @param statement Unique identifier matching the statement to use.
+   *                  与要使用的语句集匹配的唯一标识符
    * @param parameter A parameter object to pass to the statement.
+   *                  要传递给语句的参数对象
    * @param rowBounds  Bounds to limit object retrieval
-   * @return List of mapped object
+   *                   限制对象检索的边界
+   * @return List of mapped object 映射对象的列表
    */
   <E> List<E> selectList(String statement, Object parameter, RowBounds rowBounds);
 
@@ -80,10 +98,16 @@ public interface SqlSession extends Closeable {
    * The selectMap is a special case in that it is designed to convert a list
    * of results into a Map based on one of the properties in the resulting
    * objects.
+   * selectMap是一种特殊情况，因为他的设计目的是根据结果对象中的一个属性将结果列表转化成map
+   * convert A into B 将 A 转化为 B，
+   * based on： 基于....，根据....
+   * one of the 其中一个
    * Eg. Return a of Map[Integer,Author] for selectMap("selectAuthors","id")
-   * @param <K> the returned Map keys type
-   * @param <V> the returned Map values type
+   * 例如，从 selectMap("selectAuthors", "id")， 返回一个map[Integer, Author];
+   * @param <K> the returned Map keys type 返回的map key的类型
+   * @param <V> the returned Map values type 返回的map value的类型
    * @param statement Unique identifier matching the statement to use.
+   *
    * @param mapKey The property to use as key for each value in the list.
    * @return Map containing key pair data.
    */
@@ -269,9 +293,10 @@ public interface SqlSession extends Closeable {
 
   /**
    * Retrieves a mapper.
-   * @param <T> the mapper type
-   * @param type Mapper interface class
-   * @return a mapper bound to this SqlSession
+   * 检索一个映射（主要就是映射接口，要通过Mapper文件，来生成一个代理类，实现接口方法，以达到调用数据的目的）
+   * @param <T> the mapper type mapper映射的类型
+   * @param type Mapper interface class mapper接口Class类信息
+   * @return a mapper bound to this SqlSession 绑定到这个sqlSession中的映射文件 bind
    */
   <T> T getMapper(Class<T> type);
 

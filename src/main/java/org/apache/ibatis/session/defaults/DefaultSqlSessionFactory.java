@@ -32,6 +32,8 @@ import org.apache.ibatis.transaction.TransactionFactory;
 import org.apache.ibatis.transaction.managed.ManagedTransactionFactory;
 
 /**
+ * 这是SqlSessionFactory的一个默认实现
+ * 通过SqlSessionBuilder建造器，就生成了一个SqlSessionFacotry的工厂
  * @author Clinton Begin
  */
 public class DefaultSqlSessionFactory implements SqlSessionFactory {
@@ -42,8 +44,16 @@ public class DefaultSqlSessionFactory implements SqlSessionFactory {
     this.configuration = configuration;
   }
 
+  /**
+   * 这是sqlSession工厂中获取一个Sqlsession的方法
+   * sqlSession是mybatis的核心，一切映射和查询操作都是通过SqlSession实现的
+   * @return
+   */
   @Override
   public SqlSession openSession() {
+    //同样，使用重载编写连接数据源，打开session的方法
+    //该方法相当于，jdbc加载数据源，获取数据连接，然后从连接中获取预编译语句集
+    //sqlSession持有数据库连接，并且可以获取语句集进行CRUD操作
     return openSessionFromDataSource(configuration.getDefaultExecutorType(), null, false);
   }
 
@@ -87,13 +97,26 @@ public class DefaultSqlSessionFactory implements SqlSessionFactory {
     return configuration;
   }
 
+  /**
+   * 私有的创建sqlSession，连接数据源的方法
+   * 该方法通过重载的方法，开放接口openSession，供其他模块使用
+   * @param execType sql执行器方法默认为simple简易查询，还有reuse和batch（批量）模式
+   * @param level 事务隔离等级（RDBMS一般都要有事务管理，用来进行异常回滚操作）
+   * @param autoCommit 自动提交（默认不配置情况下，是false）
+   * @return
+   */
   private SqlSession openSessionFromDataSource(ExecutorType execType, TransactionIsolationLevel level, boolean autoCommit) {
     Transaction tx = null;
     try {
+      //从配置中获取环境信息
       final Environment environment = configuration.getEnvironment();
+      //根据环境信息，生成一个事务工厂
       final TransactionFactory transactionFactory = getTransactionFactoryFromEnvironment(environment);
+      //创建一个新的事务
       tx = transactionFactory.newTransaction(environment.getDataSource(), level, autoCommit);
+      //创建一个执行器，sqlSession要持有一个Executor来执行语句集，获取结果
       final Executor executor = configuration.newExecutor(tx, execType);
+      //通过配置，执行器，是否自动提交，返回一个sqlSession的默认实现
       return new DefaultSqlSession(configuration, executor, autoCommit);
     } catch (Exception e) {
       closeTransaction(tx); // may have fetched a connection so lets call close()

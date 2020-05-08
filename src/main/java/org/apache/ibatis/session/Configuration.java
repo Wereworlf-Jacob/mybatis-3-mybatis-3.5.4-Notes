@@ -767,6 +767,11 @@ public class Configuration {
     mapperRegistry.addMappers(packageName, superType);
   }
 
+  /**
+   * 给一个包名，那么要把包下面的所有接口mapper都注册到MapperRegistry中。
+   * 不考虑那么多，使用多态的性质，直接交给mapperRegistry去注册。configuration的任务就完成了
+   * @param packageName
+   */
   public void addMappers(String packageName) {
     mapperRegistry.addMappers(packageName);
   }
@@ -776,6 +781,7 @@ public class Configuration {
   }
 
   public <T> T getMapper(Class<T> type, SqlSession sqlSession) {
+    //通过mapper注册类来获取一个mapper
     return mapperRegistry.getMapper(type, sqlSession);
   }
 
