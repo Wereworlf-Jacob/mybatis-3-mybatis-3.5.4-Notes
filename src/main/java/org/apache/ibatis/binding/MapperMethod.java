@@ -49,14 +49,31 @@ public class MapperMethod {
   private final SqlCommand command;
   private final MethodSignature method;
 
+  /**
+   * MapperMethod的构造方法
+   * @param mapperInterface mapper interface类信息
+   * @param method 要执行的mapper的方法
+   * @param config 配置信息
+   */
   public MapperMethod(Class<?> mapperInterface, Method method, Configuration config) {
+    //创建一个sqlCommand sql命令对象
     this.command = new SqlCommand(config, mapperInterface, method);
+    //创建一个方法签名对象
     this.method = new MethodSignature(config, mapperInterface, method);
   }
 
+  /**
+   * 该方法用于真正地执行mapper接口的方法
+   * @param sqlSession
+   * @param args
+   * @return
+   */
   public Object execute(SqlSession sqlSession, Object[] args) {
-    Object result;
-    switch (command.getType()) {
+    Object result; //执行sql命令后的返回值
+    switch (command.getType()) { //sql命令的类型，是CURD中的哪一种
+      //这个地方为什么没有用到策略模式呢？
+      //因为策略模式注重的是扩展，符合开闭原则，而数据库操作CRUD是不变的，那么与其使用策略模式
+      //来增加那么多策略类，不如直接使用switch来的方便。而且策略类多了，会使代码变得繁琐
       case INSERT: {
         Object param = method.convertArgsToSqlCommandParam(args);
         result = rowCountResult(sqlSession.insert(command.getName(), param));
@@ -72,7 +89,7 @@ public class MapperMethod {
         result = rowCountResult(sqlSession.delete(command.getName(), param));
         break;
       }
-      case SELECT:
+      case SELECT: //这里着重看一个selectByPrimaryKey方法，到最后是怎么执行的。
         if (method.returnsVoid() && method.hasResultHandler()) {
           executeWithResultHandler(sqlSession, args);
           result = null;
@@ -221,9 +238,18 @@ public class MapperMethod {
     private final String name;
     private final SqlCommandType type;
 
+    /**
+     * 创建sql命令对象，用于区分CURD操作
+     * @param configuration 配置信息
+     * @param mapperInterface mapper interface类信息
+     * @param method 要执行的方法
+     */
     public SqlCommand(Configuration configuration, Class<?> mapperInterface, Method method) {
+      //获取方法名
       final String methodName = method.getName();
+      //获取声明该方法的类信息 **Mapper
       final Class<?> declaringClass = method.getDeclaringClass();
+      //解析为Mapped语句集对象
       MappedStatement ms = resolveMappedStatement(mapperInterface, methodName, declaringClass,
           configuration);
       if (ms == null) {
@@ -251,16 +277,30 @@ public class MapperMethod {
       return type;
     }
 
+    /**
+     * 将method方法，解析为MappedStatement对象
+     * @param mapperInterface mapper interface
+     * @param methodName 方法名称
+     * @param declaringClass 声明类
+     * @param configuration 配置信息
+     * @return
+     */
     private MappedStatement resolveMappedStatement(Class<?> mapperInterface, String methodName,
         Class<?> declaringClass, Configuration configuration) {
+      //statementId = **mapper + methodName(ps: selectByPrimaryKey)
       String statementId = mapperInterface.getName() + "." + methodName;
+      //statement应该是在加载mapper信息的时候，由configuration初始化的，保存在configuration的一个容器里面
       if (configuration.hasStatement(statementId)) {
         return configuration.getMappedStatement(statementId);
-      } else if (mapperInterface.equals(declaringClass)) {
+      } else if (mapperInterface.equals(declaringClass)) { //如果configuration里面没有，并且mapperInterface和declaringClass是同一个类，则返回空
         return null;
       }
+      //否则的话，说明该mapper interface 有父类接口，那么循环获取父类接口
       for (Class<?> superInterface : mapperInterface.getInterfaces()) {
+        //如果superInterface是declaringClass的子接口也就是 superInterface extend declaringClass
         if (declaringClass.isAssignableFrom(superInterface)) {
+          //回调该接口，也就是说，configuration容器保存mapper的方法是，如果是该mapper中的方法，那么就用mapper class name + methodName
+          //如果是父类接口的方法，那么就是父类接口 class name + methodName?
           MappedStatement ms = resolveMappedStatement(superInterface, methodName,
               declaringClass, configuration);
           if (ms != null) {

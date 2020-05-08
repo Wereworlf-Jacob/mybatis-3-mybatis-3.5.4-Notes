@@ -150,6 +150,8 @@ public class Configuration {
   protected final TypeAliasRegistry typeAliasRegistry = new TypeAliasRegistry();
   protected final LanguageDriverRegistry languageRegistry = new LanguageDriverRegistry();
 
+  //mappedStatements 方法对应的映射语句集，继承自hashMap，该容器名字为Mapped Statements collection ，
+  // conflictMessageProducer是一个1.8语法的冲突消息生产器，格式为：. please check " + savedValue.getResource() + " and " + targetValue.getResource()
   protected final Map<String, MappedStatement> mappedStatements = new StrictMap<MappedStatement>("Mapped Statements collection")
       .conflictMessageProducer((savedValue, targetValue) ->
           ". please check " + savedValue.getResource() + " and " + targetValue.getResource());
@@ -789,14 +791,26 @@ public class Configuration {
     return mapperRegistry.hasMapper(type);
   }
 
+  /**
+   * 判断MappedStatement容器中是否存在该方法对应的语句集信息
+   * @param statementName interfaceName + methodName
+   * @return
+   */
   public boolean hasStatement(String statementName) {
     return hasStatement(statementName, true);
   }
 
+  /**
+   * 判断mappedStatement容器中是否有该数据，通过hasStatement(String statementName) 方法进来的validateIncompleteStatements = true
+   * @param statementName interfaceName + methodName
+   * @param validateIncompleteStatements true
+   * @return
+   */
   public boolean hasStatement(String statementName, boolean validateIncompleteStatements) {
-    if (validateIncompleteStatements) {
+    if (validateIncompleteStatements) { //如果validateIncompleteStatements = true 则编译所有statements
       buildAllStatements();
     }
+    //判断容器中是否包含statementName
     return mappedStatements.containsKey(statementName);
   }
 
@@ -805,12 +819,17 @@ public class Configuration {
   }
 
   /*
-   * Parses all the unprocessed statement nodes in the cache. It is recommended
-   * to call this method once all the mappers are added as it provides fail-fast
-   * statement validation.
+   * Parses all the unprocessed statement nodes in the cache.
+   * 解析缓存中所有未处理的语句节点
+   * It is recommended to call this method once all the mappers are added as it provides fail-fast statement validation.
+   * 建议在添加所有映射器之后调用此方法，因为他提供了快速失效语句验证
+   *
+   * 编译所有语句集
    */
   protected void buildAllStatements() {
+    //解析待定的结果集合
     parsePendingResultMaps();
+    //如果incompleteCacheRefs不是空的，那么
     if (!incompleteCacheRefs.isEmpty()) {
       synchronized (incompleteCacheRefs) {
         incompleteCacheRefs.removeIf(x -> x.resolveCacheRef() != null);
@@ -948,6 +967,7 @@ public class Configuration {
     @Override
     @SuppressWarnings("unchecked")
     public V put(String key, V value) {
+      //如果key已经存在了，需要抛出异常错误
       if (containsKey(key)) {
         throw new IllegalArgumentException(name + " already contains value for " + key
             + (conflictMessageProducer == null ? "" : conflictMessageProducer.apply(super.get(key), value)));

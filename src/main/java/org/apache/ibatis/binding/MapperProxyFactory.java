@@ -50,6 +50,7 @@ public class MapperProxyFactory<T> {
    * 例如下面内部类mepo 作为代理类持有 实现person接口的一个实例，也就是zhangsan
    * 那么当我使用时，创建一个mepo实例，然后持有一个zhangsan实例，然后创建一个person代理实例，来调用方法
    * 然而此处使用的jdk动态代理，并没有持有一个Mapper实例，仅仅是拿到了Mapper的interface信息，那么他又是如何通过反射来使Mapper代理类来调用方法呢？
+   * mapperProxy是mapper的代理类，它实现了InvoiceHandler接口，所以去看看他的invoke方法干了点什么
    *
    * @param mapperProxy
    * @return
