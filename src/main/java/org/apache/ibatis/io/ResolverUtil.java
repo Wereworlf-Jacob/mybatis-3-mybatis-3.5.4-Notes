@@ -205,18 +205,25 @@ public class ResolverUtil<T> {
 
   /**
    * Scans for classes starting at the package provided and descending into subpackages.
-   * Each class is offered up to the Test as it is discovered, and if the Test returns
-   * true the class is retained.  Accumulated classes can be fetched by calling
+   * 扫描从提供的包开始到其下行所有的子包中的类
+   * Each class is offered up to the Test as it is discovered, and if the Test returns true the class is retained.
+   * 每个类在被发现时就提供给了测试，测试返回true，那么该类保留
+   * Accumulated classes can be fetched by calling
+   * 累计类可以通过调用获取
    * {@link #getClasses()}.
    *
    * @param test an instance of {@link Test} that will be used to filter classes
+   *             一个实现了Test接口用来过滤类的实例
    * @param packageName the name of the package from which to start scanning for
    *        classes, e.g. {@code net.sourceforge.stripes}
+   *                    从开始扫描的类中获取到的包的名称
    */
   public ResolverUtil<T> find(Test test, String packageName) {
+    //net.sourceforge.stripes 变为 net/sourceforge.stripes
     String path = getPackagePath(packageName);
 
     try {
+      //遍历包下所有子资源的路径
       List<String> children = VFS.getInstance().list(path);
       for (String child : children) {
         if (child.endsWith(".class")) {
@@ -241,11 +248,12 @@ public class ResolverUtil<T> {
   }
 
   /**
-   * Add the class designated by the fully qualified class name provided to the set of
-   * resolved classes if and only if it is approved by the Test supplied.
-   *
+   * Add the class designated by the fully qualified class name provided to the set of resolved classes if and only if it is approved by the Test supplied.
+   * 当且仅当被提供的测试批准时，将由提供的完全限定类名指定的类添加到已解析的类集中
    * @param test the test used to determine if the class matches
+   *             用来决定class是否匹配的test类
    * @param fqn the fully qualified name of a class
+   *            一个类的全限定名
    */
   @SuppressWarnings("unchecked")
   protected void addIfMatching(Test test, String fqn) {

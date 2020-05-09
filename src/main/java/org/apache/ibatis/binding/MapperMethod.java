@@ -100,7 +100,10 @@ public class MapperMethod {
         } else if (method.returnsCursor()) {
           result = executeForCursor(sqlSession, args);
         } else {
+          //selectByPrimaryKey返回值应该为一个Object，所以应该走else方法
+          //调用MethodMapper方法，将方法参数转化成SqlCommand使用的参数
           Object param = method.convertArgsToSqlCommandParam(args);
+          //查询一个结果
           result = sqlSession.selectOne(command.getName(), param);
           if (method.returnsOptional()
               && (result == null || !method.getReturnType().equals(result.getClass()))) {
@@ -325,7 +328,14 @@ public class MapperMethod {
     private final Integer rowBoundsIndex;
     private final ParamNameResolver paramNameResolver;
 
+    /**
+     * 构造一个方法签名的方法
+     * @param configuration 配置信息
+     * @param mapperInterface mapper interface
+     * @param method 调用的mapper中的方法
+     */
     public MethodSignature(Configuration configuration, Class<?> mapperInterface, Method method) {
+      //决定返回值类型，通过类型参数决定器，解决返回值类型
       Type resolvedReturnType = TypeParameterResolver.resolveReturnType(method, mapperInterface);
       if (resolvedReturnType instanceof Class<?>) {
         this.returnType = (Class<?>) resolvedReturnType;
@@ -335,10 +345,13 @@ public class MapperMethod {
         this.returnType = method.getReturnType();
       }
       this.returnsVoid = void.class.equals(this.returnType);
+      //如果返回值类型是Collection的子类或者一个数组，那么该方法返回的是多个值，returnsMany = true
       this.returnsMany = configuration.getObjectFactory().isCollection(this.returnType) || this.returnType.isArray();
       this.returnsCursor = Cursor.class.equals(this.returnType);
       this.returnsOptional = Optional.class.equals(this.returnType);
+      //如果returnType是一个Map集合，那么获取方法的MapKey注解信息
       this.mapKey = getMapKey(method);
+      //如果mapKey注解信息不为空，那么returnsMap = true
       this.returnsMap = this.mapKey != null;
       this.rowBoundsIndex = getUniqueParamIndex(method, RowBounds.class);
       this.resultHandlerIndex = getUniqueParamIndex(method, ResultHandler.class);
@@ -346,6 +359,8 @@ public class MapperMethod {
     }
 
     public Object convertArgsToSqlCommandParam(Object[] args) {
+      //调用参数名称决定器，将参数列表转化成sqlCommand使用param
+      //假设方法为select(String name, String age)，该返回值返回{"0": "zhangsan", "1": "23", "param1": "zhangsan", "param2": "23"}
       return paramNameResolver.getNamedParams(args);
     }
 

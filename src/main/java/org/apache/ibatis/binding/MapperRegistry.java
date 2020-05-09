@@ -94,14 +94,23 @@ public class MapperRegistry {
       if (hasMapper(type)) {
         throw new BindingException("Type " + type + " is already known to the MapperRegistry.");
       }
+      //是否完全加载的标识，注册到knownMappers里面后，需要解析mapper interface完成加载
+      //如果正常完成加载，那么下次就可以从容器中获取mapperProxyFactory信息，来创建一个mapper实例
+      //如果未正常加载，那么就要从注册器中删除该mapper interface，未正常加载说明该类可能不是一个mapper接口。
+      //如果在从容器中获取 该mapper的话，就要抛出异常，该mapper未找到，或未注册
       boolean loadCompleted = false;
       try {
         //注册到knownMapper中，注意注册到MapperRegistry中的不是Mapper interface，而是以Mapper Class为泛型的MapperProxyFactory，该Factory持有Mapper的Class信息
         knownMappers.put(type, new MapperProxyFactory<>(type));
-        // It's important that the type is added before the parser is run
-        // otherwise the binding may automatically be attempted by the
-        // mapper parser. If the type is already known, it won't try.
+        // It's important that the type is added before the parser is run otherwise the binding may automatically be attempted by the mapper parser.
+        // 在解析器运行之前添加类型非常重要，否则映射器解析器可能会自动尝试绑定
+        // If the type is already known, it won't try.
+        // 如果该类已经被识别到了，那么就不会再尝试了
+        //我猜，在mapperAnnotationBuilder里面会绑定MappedStatement
+        //将Mapper interface 交给 MapperProxyFactory去生产对象之后，那么就轮到MapperAnnotationBuilder来解析相关的Mapper interface的信息了。
+        //主要部分，比如解析语句集到容器里面，回头就可以直接从容器里面拿到语句来运行了。
         MapperAnnotationBuilder parser = new MapperAnnotationBuilder(config, type);
+        //解析mapper interface，加载该mapper信息
         parser.parse();
         loadCompleted = true;
       } finally {
@@ -125,7 +134,9 @@ public class MapperRegistry {
    */
   public void addMappers(String packageName, Class<?> superType) {
     //通过解决工具ResolverUtil来获取内容 ，具体这个工具类是怎么从包中解析的暂时先不理会
+    //从configuration.addMapper(String packageName)方法进来的superType = Object.class
     ResolverUtil<Class<?>> resolverUtil = new ResolverUtil<>();
+    //通过resolverUtil，获取package下所有class类信息
     resolverUtil.find(new ResolverUtil.IsA(superType), packageName);
     Set<Class<? extends Class<?>>> mapperSet = resolverUtil.getClasses();
     for (Class<?> mapperClass : mapperSet) {

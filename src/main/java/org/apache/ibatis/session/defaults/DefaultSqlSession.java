@@ -70,9 +70,19 @@ public class DefaultSqlSession implements SqlSession {
     return this.selectOne(statement, null);
   }
 
+  /**
+   * 查询一个结果
+   * @param statement Unique identifier matching the statement to use.
+   *                  与要使用的语句匹配的唯一标识符（主键标志）， sqlCommandName
+   * @param parameter A parameter object to pass to the statement.
+   *                  要传递到语句中的参数对象 params对象
+   * @param <T>
+   * @return
+   */
   @Override
   public <T> T selectOne(String statement, Object parameter) {
     // Popular vote was to return null on 0 results and throw exception on too many.
+    // 普票是，当没有结果是返回一个null，当有多个结果是抛出异常
     List<T> list = this.selectList(statement, parameter);
     if (list.size() == 1) {
       return list.get(0);
@@ -143,6 +153,7 @@ public class DefaultSqlSession implements SqlSession {
   @Override
   public <E> List<E> selectList(String statement, Object parameter, RowBounds rowBounds) {
     try {
+      //获取映射的语句对象
       MappedStatement ms = configuration.getMappedStatement(statement);
       return executor.query(ms, wrapCollection(parameter), rowBounds, Executor.NO_RESULT_HANDLER);
     } catch (Exception e) {

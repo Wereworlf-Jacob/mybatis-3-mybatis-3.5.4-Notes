@@ -89,15 +89,25 @@ public class XMLMapperBuilder extends BaseBuilder {
     this.resource = resource;
   }
 
+  /**
+   * 加载XMl配置文件，然后解析配置文件内容
+   */
   public void parse() {
+    /**
+     * 如果是通过package扫描进来的该方法，那么说明Mapper interface已经注册到容器里面了
+     */
     if (!configuration.isResourceLoaded(resource)) {
       configurationElement(parser.evalNode("/mapper"));
       configuration.addLoadedResource(resource);
+      //如果通过<mapper resource/url />来加载的mapper信息，该mapper信息未被注册到knownMappers容器里面
+      //那么在bindMapperForNamespace方法中，会调用configuration的addMapper方法来将mapper注册到knownMappers里面去
       bindMapperForNamespace();
     }
-
+    //解决待定的ResultMaps信息
     parsePendingResultMaps();
+    //解决待定的CacheRefs信息
     parsePendingCacheRefs();
+    //解决待定的Statements信息
     parsePendingStatements();
   }
 
@@ -427,6 +437,17 @@ public class XMLMapperBuilder extends BaseBuilder {
         //ignore, bound type is not required
       }
       if (boundType != null) {
+        //如果konwnMapper已经注册过了，就不会再重新注册进去了
+        /**
+         * 假设先通过Mapper package进来的方法，因为已经注册过interface了，所以不能重复注册，
+         * 但是还有配套的xml需要加载，所以在这个地方，就不再需要重复地往knownMapper注册了。
+         *
+         * 如果先配置的resource，那么是先解析的xml信息，然后需要注册到knownMapper中。
+         * 然后再重复扫描到这个包之后，因为已经加载过xml文件了，所以再扫描到之后，就不需要重复加载xml文件了
+         * 所以需要设置addLoadedResource("namespace") ，这样在包扫描到java文件后，只会解析java文件
+         * 而不会再重复加载xml文件了 //应该是专门给spring用的，因为mybatis原生这么配置的话，应该会报错
+         * 因为扫描包的时候，会判断如果容器里面注册过了，就会报重复注册异常
+         */
         if (!configuration.hasMapper(boundType)) {
           // Spring may not know the real resource name so we set a flag
           // to prevent loading again this resource from the mapper interface

@@ -398,6 +398,18 @@ public class XMLConfigBuilder extends BaseBuilder {
           String mapperPackage = child.getStringAttribute("name");
           configuration.addMappers(mapperPackage);
         } else { //否则的话，根据resource，url，class来加载mapper 这些内容暂时先不考虑
+          //当看到保存MappedStatement的时候，找不到解析存放的地方。回溯查找，貌似调用到mapperParse.parse方法，那么就需要看一下这几个if else会有什么影响
+          //mybatis配置文件中，可以配置mappers配置器
+          /**
+           * <mapper>
+           *   <mapper resource="org/mybatis/builder/AuthorMapper.xml"/>
+           *   <mapper url="file:///var/mappers/AuthorMapper.xml"/>
+           *   <mapper class="org.mybatis.builder.AuthorMapper"/>
+           *   <package name="org.mybatis.builder"/>
+           * </mappers>
+           * //其中resource，url，class之间是互斥的，还有一个就是package包名配置，一般常用的也是包名配置
+           * 那么addMappedStatement，在result， url 情况下，是走mapperParser.parse()里面会有相关调用，那么package方法中是如何调用的呢？
+           */
           String resource = child.getStringAttribute("resource");
           String url = child.getStringAttribute("url");
           String mapperClass = child.getStringAttribute("class");

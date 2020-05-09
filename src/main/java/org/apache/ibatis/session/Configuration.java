@@ -308,6 +308,16 @@ public class Configuration {
     this.mapUnderscoreToCamelCase = mapUnderscoreToCamelCase;
   }
 
+  /**
+   * 添加资源信息
+   * 资源的信息添加途径有很多，比如通过<mapper resource = ''><mapper/> <mapper url = ''><mapper/>
+   * 但是大致上是两个来源
+   * 1、由package扫码，<mapper class=''/>配置，通过MapperAnnotationBuilder的parse方法进来的
+   * 2、由 resource，url 配置，通过XMLMapperBuilder.parse方法进来的。
+   * loadedResources，是一个set集合，不会保存相同的对象，而且通过如果一个mapper被扫描到两次的话会报错
+   * 所以该容器的值，应该只会通过某一种途径进来数据
+   * @param resource
+   */
   public void addLoadedResource(String resource) {
     loadedResources.add(resource);
   }
@@ -754,6 +764,8 @@ public class Configuration {
     if (validateIncompleteStatements) {
       buildAllStatements();
     }
+    //这个地方从容器中获取一个ID，但是从以上步骤中，未发现set方法，那么这个是什么时候set进去的呢？
+    //从当前类中能找到 addMappedStatement，那么这个add方法是什么时候调用的呢？猜测应该也是在扫描到mapper的时候，注入进去的吧？回溯查找
     return mappedStatements.get(id);
   }
 
@@ -829,12 +841,13 @@ public class Configuration {
   protected void buildAllStatements() {
     //解析待定的结果集合
     parsePendingResultMaps();
-    //如果incompleteCacheRefs不是空的，那么
+    //如果incompleteCacheRefs不是空的，那么将容器元素resolveCacheRef不为空的数据删掉
     if (!incompleteCacheRefs.isEmpty()) {
       synchronized (incompleteCacheRefs) {
         incompleteCacheRefs.removeIf(x -> x.resolveCacheRef() != null);
       }
     }
+    //如果incompleteCacheRefs不是空的，那么将容器元素parseStatementNode处理之后，全部删掉
     if (!incompleteStatements.isEmpty()) {
       synchronized (incompleteStatements) {
         incompleteStatements.removeIf(x -> {
@@ -843,6 +856,7 @@ public class Configuration {
         });
       }
     }
+    //如果incompleteCacheRefs不是空的，那么将容器元素resolve处理之后，全部删掉
     if (!incompleteMethods.isEmpty()) {
       synchronized (incompleteMethods) {
         incompleteMethods.removeIf(x -> {

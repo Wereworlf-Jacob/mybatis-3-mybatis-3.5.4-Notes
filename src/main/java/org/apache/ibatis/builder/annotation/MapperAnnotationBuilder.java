@@ -117,31 +117,42 @@ public class MapperAnnotationBuilder {
 
   public MapperAnnotationBuilder(Configuration configuration, Class<?> type) {
     String resource = type.getName().replace('.', '/') + ".java (best guess)";
+    //这里有一个辅助类，MapperBuilderAssistant，在该类中，会调用addMappedStatement
     this.assistant = new MapperBuilderAssistant(configuration, resource);
     this.configuration = configuration;
     this.type = type;
   }
 
+  /**
+   * 解析Mapper interface信息，加载Mapper类
+   */
   public void parse() {
     String resource = type.toString();
     if (!configuration.isResourceLoaded(resource)) {
+      //如果该资源文件java类没有被加载过，才会走这个方法，记载java类的同时，会加载xml文件信息
       loadXmlResource();
+      //设置标识，设置命名空间，避免在XMLMapperBuilder中重复加载
       configuration.addLoadedResource(resource);
       assistant.setCurrentNamespace(type.getName());
+      //如果该类使用了@CacheNamespace, 那么就要设置缓存
       parseCache();
+      //如果该类使用了@CacheNamespaceRef，就需要进行设置
       parseCacheRef();
+      //获取该类中的所有方法
       Method[] methods = type.getMethods();
       for (Method method : methods) {
         try {
           // issue #237
-          if (!method.isBridge()) {
-            parseStatement(method);
+          if (!method.isBridge()) { //如果该方法不是桥接方法，那么就会解析语句
+            parseStatement(method); //这个主要是从注解中获取方法信息，但是从扫描到的mapper中，不一定就是走注解的，也可能是走xml的，所以还得再研究
           }
-        } catch (IncompleteElementException e) {
+        } catch (IncompleteElementException e) { //如果捕获到IncompleteElementException那么就将该类以及方法
+          //放到incompleteMethods容器中，以待在执行mappedMapper.invoke方法时再处理
           configuration.addIncompleteMethod(new MethodResolver(this, method));
         }
       }
     }
+    //解决 待定的方法的内容，和解析xml没有任何关系呀。
     parsePendingMethods();
   }
 
@@ -160,16 +171,23 @@ public class MapperAnnotationBuilder {
     }
   }
 
+  /**
+   * 如果该mapper类未被加载过的话，那么需要先加载mapper接口对应的xml信息
+   */
   private void loadXmlResource() {
-    // Spring may not know the real resource name so we check a flag
-    // to prevent loading again a resource twice
-    // this flag is set at XMLMapperBuilder#bindMapperForNamespace
+    // Spring may not know the real resource name so we check a flag to prevent loading again a resource twice this flag is set at XMLMapperBuilder#bindMapperForNamespace
+    // spring可能不知道真正的资源名称，所以我们检查一个标志来防止一个资源文件加载两次的情况，该标志被放在 XMLMapperBuilder#bindMapperForNamespace 中
+    //这个表示和上面的标识不是一样的，mapper有一个java类和一个xml文件，是否加载过java类是一个，是否加载过xml文件是一个namespace是xml文件的内容
+    //所以这个地方，是判断，如果没有加载过xml文件，就会走这个方法
     if (!configuration.isResourceLoaded("namespace:" + type.getName())) {
+      //获取xml文件的资源信息
       String xmlResource = type.getName().replace('.', '/') + ".xml";
       // #1347
+      //从xml资源地址中，读取xml文件流信息
       InputStream inputStream = type.getResourceAsStream("/" + xmlResource);
       if (inputStream == null) {
         // Search XML mapper that is not in the module but in the classpath.
+        //搜索没有在模块中，但是在类路径中的xml映射文件
         try {
           inputStream = Resources.getResourceAsStream(type.getClassLoader(), xmlResource);
         } catch (IOException e2) {
@@ -177,7 +195,9 @@ public class MapperAnnotationBuilder {
         }
       }
       if (inputStream != null) {
+        //获取到xml文件流，然后通过XMLMapperBuilder构造xml信息
         XMLMapperBuilder xmlParser = new XMLMapperBuilder(inputStream, assistant.getConfiguration(), xmlResource, configuration.getSqlFragments(), type.getName());
+        //兜兜转转，最终还是要通过XMLMapperBuilder来构建MappedStatement信息，由此可见，人家的框架优秀在哪里，解耦和复用
         xmlParser.parse();
       }
     }
@@ -295,11 +315,19 @@ public class MapperAnnotationBuilder {
     return null;
   }
 
+  /**
+   * 获取到mapper中的每个方法，然后根据该方法解析出sql语句
+   * @param method
+   */
   void parseStatement(Method method) {
+    //获取方法的参数类型
+    //如果参数中有一个类型，那么参数类型 = param的类型，如果有多个类型，那么参数类型 = paramMap
     Class<?> parameterTypeClass = getParameterType(method);
+    //获取语言驱动器
     LanguageDriver languageDriver = getLanguageDriver(method);
+    //从注解中获取sql数据源信息
     SqlSource sqlSource = getSqlSourceFromAnnotations(method, parameterTypeClass, languageDriver);
-    if (sqlSource != null) {
+    if (sqlSource != null) { //从注解中获取到信息之后，进行解析
       Options options = method.getAnnotation(Options.class);
       final String mappedStatementId = type.getName() + "." + method.getName();
       Integer fetchSize = null;

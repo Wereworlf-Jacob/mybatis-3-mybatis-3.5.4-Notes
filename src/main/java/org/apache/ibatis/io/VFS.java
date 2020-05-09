@@ -29,6 +29,7 @@ import org.apache.ibatis.logging.LogFactory;
 
 /**
  * Provides a very simple API for accessing resources within an application server.
+ * 提供了一个非常简单的API，用于访问应用服务器中的资源文件
  *
  * @author Ben Gunter
  */
@@ -187,11 +188,12 @@ public abstract class VFS {
   protected abstract List<String> list(URL url, String forPath) throws IOException;
 
   /**
-   * Recursively list the full resource path of all the resources that are children of all the
-   * resources found at the specified path.
-   *
+   * Recursively list the full resource path of all the resources that are children of all the resources found at the specified path.
+   * 递归地列出在指定路径上找到的所有资源的子资源的所有资源的完整资源路径
    * @param path The path of the resource(s) to list.
+   *             要列出资源的路径
    * @return A list containing the names of the child resources.
+   * 包含子资源名称的列表
    * @throws IOException If I/O errors occur
    */
   public List<String> list(String path) throws IOException {
