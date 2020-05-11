@@ -34,6 +34,10 @@ import org.apache.ibatis.transaction.Transaction;
 /**
  * @author Clinton Begin
  */
+
+/**
+ * 简单的Sql执行器
+ */
 public class SimpleExecutor extends BaseExecutor {
 
   public SimpleExecutor(Configuration configuration, Transaction transaction) {
@@ -53,13 +57,27 @@ public class SimpleExecutor extends BaseExecutor {
     }
   }
 
+  /**
+   * 执行查询操作，从BaseExecutor中调用过来的。
+   * @param ms 语句集对象
+   * @param parameter 参数
+   * @param rowBounds 分页内容
+   * @param resultHandler resultHandler
+   * @param boundSql 绑定的Sql
+   * @param <E>
+   * @return
+   * @throws SQLException
+   */
   @Override
   public <E> List<E> doQuery(MappedStatement ms, Object parameter, RowBounds rowBounds, ResultHandler resultHandler, BoundSql boundSql) throws SQLException {
     Statement stmt = null;
     try {
       Configuration configuration = ms.getConfiguration();
+      //构建语句集处理器
       StatementHandler handler = configuration.newStatementHandler(wrapper, ms, parameter, rowBounds, resultHandler, boundSql);
+      //相当于jdbc里面创建预编译语句
       stmt = prepareStatement(handler, ms.getStatementLog());
+      //执行查询操作
       return handler.query(stmt, resultHandler);
     } finally {
       closeStatement(stmt);

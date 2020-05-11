@@ -138,8 +138,9 @@ public class Configuration {
   protected String databaseId;
   /**
    * Configuration factory class.
+   * 配置工厂类
    * Used to create Configuration for loading deserialized unread properties.
-   *
+   * 用于创建用于加载反序列化未读属性的配置。
    * @see <a href='https://code.google.com/p/mybatis/issues/detail?id=300'>Issue 300 (google code)</a>
    */
   protected Class<?> configurationFactory;
@@ -600,6 +601,16 @@ public class Configuration {
     return resultSetHandler;
   }
 
+  /**
+   * 创建StatementHandler
+   * @param executor
+   * @param mappedStatement
+   * @param parameterObject
+   * @param rowBounds
+   * @param resultHandler
+   * @param boundSql
+   * @return
+   */
   public StatementHandler newStatementHandler(Executor executor, MappedStatement mappedStatement, Object parameterObject, RowBounds rowBounds, ResultHandler resultHandler, BoundSql boundSql) {
     StatementHandler statementHandler = new RoutingStatementHandler(executor, mappedStatement, parameterObject, rowBounds, resultHandler, boundSql);
     statementHandler = (StatementHandler) interceptorChain.pluginAll(statementHandler);
@@ -614,16 +625,18 @@ public class Configuration {
     executorType = executorType == null ? defaultExecutorType : executorType;
     executorType = executorType == null ? ExecutorType.SIMPLE : executorType;
     Executor executor;
-    if (ExecutorType.BATCH == executorType) {
+    if (ExecutorType.BATCH == executorType) { //batch 执行器
       executor = new BatchExecutor(this, transaction);
-    } else if (ExecutorType.REUSE == executorType) {
+    } else if (ExecutorType.REUSE == executorType) { // reuse 执行器
       executor = new ReuseExecutor(this, transaction);
-    } else {
+    } else { //普通的单一执行器，应该默认情况下，用这个执行器比较多
       executor = new SimpleExecutor(this, transaction);
     }
-    if (cacheEnabled) {
+    if (cacheEnabled) { //可缓存的执行器
       executor = new CachingExecutor(executor);
     }
+    //还得把执行器扔到interceptorChain里面，这个是一个拦截器链
+    //应该使用分页拦截的时候，用到了这个小东西。
     executor = (Executor) interceptorChain.pluginAll(executor);
     return executor;
   }

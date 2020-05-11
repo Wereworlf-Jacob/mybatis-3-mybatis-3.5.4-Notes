@@ -97,6 +97,7 @@ public class XMLMapperBuilder extends BaseBuilder {
      * 如果是通过package扫描进来的该方法，那么说明Mapper interface已经注册到容器里面了
      */
     if (!configuration.isResourceLoaded(resource)) {
+      //mapper interface扫描加载java类之后，仍然会进来再加载一次xml文件（当xml文件存在时）
       configurationElement(parser.evalNode("/mapper"));
       configuration.addLoadedResource(resource);
       //如果通过<mapper resource/url />来加载的mapper信息，该mapper信息未被注册到knownMappers容器里面
@@ -115,33 +116,55 @@ public class XMLMapperBuilder extends BaseBuilder {
     return sqlFragments.get(refid);
   }
 
+  /**
+   * 获取xml文件下的mapper，然后解析mapper内容
+   * @param context <mapper><mapper/>标签下的node节点
+   */
   private void configurationElement(XNode context) {
     try {
+      //获取命名空间的名称，即com.XXX.XXX.XXX.**Mapper
       String namespace = context.getStringAttribute("namespace");
       if (namespace == null || namespace.equals("")) {
         throw new BuilderException("Mapper's namespace cannot be empty");
       }
       builderAssistant.setCurrentNamespace(namespace);
+      //加载cache-ref节点信息
       cacheRefElement(context.evalNode("cache-ref"));
+      //加载cache节点信息
       cacheElement(context.evalNode("cache"));
+      //加载ParameterMap标签的信息
       parameterMapElement(context.evalNodes("/mapper/parameterMap"));
+      //加载resultMap标签的信息
       resultMapElements(context.evalNodes("/mapper/resultMap"));
+      //加载sql标签的信息
       sqlElement(context.evalNodes("/mapper/sql"));
+      //创建statement语句对象，从xml文件中，这个是最重要的一个部分，就是解析crud语句
       buildStatementFromContext(context.evalNodes("select|insert|update|delete"));
     } catch (Exception e) {
       throw new BuilderException("Error parsing Mapper XML. The XML location is '" + resource + "'. Cause: " + e, e);
     }
   }
 
+  /**
+   * 从mapper.xml文件中，获取 crud 标签的内容，然后创建对应的sql语句集对象
+   * @param list
+   */
   private void buildStatementFromContext(List<XNode> list) {
+    //有databaseId和没有databaseId不一样的处理，回头再看
     if (configuration.getDatabaseId() != null) {
       buildStatementFromContext(list, configuration.getDatabaseId());
     }
     buildStatementFromContext(list, null);
   }
 
+  /**
+   * 从xml中读取节点，创建语句集对象
+   * @param list
+   * @param requiredDatabaseId
+   */
   private void buildStatementFromContext(List<XNode> list, String requiredDatabaseId) {
     for (XNode context : list) {
+      //此处循环每个curd语句，然后创建xmlStatementBuilder，同样适用建造者模式，来创建Statement对象
       final XMLStatementBuilder statementParser = new XMLStatementBuilder(configuration, builderAssistant, context, requiredDatabaseId);
       try {
         statementParser.parseStatementNode();

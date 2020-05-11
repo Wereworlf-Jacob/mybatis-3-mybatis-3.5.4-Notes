@@ -53,35 +53,47 @@ public class XMLStatementBuilder extends BaseBuilder {
     this.requiredDatabaseId = databaseId;
   }
 
+  /**
+   * 此处，根据xml识别到的node信息，然后创建statement对象
+   */
   public void parseStatementNode() {
+    //<select id = "selectByPrimaryKey"/> 接口名称的id
     String id = context.getStringAttribute("id");
     String databaseId = context.getStringAttribute("databaseId");
-
+    //处理databaseId, <select databaseId = ""/>
     if (!databaseIdMatchesCurrent(id, databaseId, this.requiredDatabaseId)) {
       return;
     }
-
     String nodeName = context.getNode().getNodeName();
+    //获取标签名称即 insert/update/delete/ 然后转化成大写，然后匹配枚举类的值
     SqlCommandType sqlCommandType = SqlCommandType.valueOf(nodeName.toUpperCase(Locale.ENGLISH));
     boolean isSelect = sqlCommandType == SqlCommandType.SELECT;
+    //是否清空缓存
     boolean flushCache = context.getBooleanAttribute("flushCache", !isSelect);
+    //是否使用缓存
     boolean useCache = context.getBooleanAttribute("useCache", isSelect);
+    //结果是否排序
     boolean resultOrdered = context.getBooleanAttribute("resultOrdered", false);
 
     // Include Fragments before parsing
+    //解析之前把片段包含进来
     XMLIncludeTransformer includeParser = new XMLIncludeTransformer(configuration, builderAssistant);
+    //应该是把所有的sql语句都包含进来
     includeParser.applyIncludes(context.getNode());
 
     String parameterType = context.getStringAttribute("parameterType");
+    //这个就是全限定名的转义应该，比如你输入一个String,应该会被转成java.lang.String
     Class<?> parameterTypeClass = resolveClass(parameterType);
 
     String lang = context.getStringAttribute("lang");
     LanguageDriver langDriver = getLanguageDriver(lang);
 
     // Parse selectKey after includes and remove them.
+    //在include之后解析selectKey并且删除它们
     processSelectKeyNodes(id, parameterTypeClass, langDriver);
 
     // Parse the SQL (pre: <selectKey> and <include> were parsed and removed)
+    //解析sql，selectKey 和 include将会被解析并且删除
     KeyGenerator keyGenerator;
     String keyStatementId = id + SelectKeyGenerator.SELECT_KEY_SUFFIX;
     keyStatementId = builderAssistant.applyCurrentNamespace(keyStatementId, true);
@@ -110,6 +122,7 @@ public class XMLStatementBuilder extends BaseBuilder {
     String keyColumn = context.getStringAttribute("keyColumn");
     String resultSets = context.getStringAttribute("resultSets");
 
+    //在这个地方，终于把MappedStatement添加进去了！然后返回到get使用的那再继续研究吧。
     builderAssistant.addMappedStatement(id, sqlSource, statementType, sqlCommandType,
         fetchSize, timeout, parameterMap, parameterTypeClass, resultMap, resultTypeClass,
         resultSetTypeEnum, flushCache, useCache, resultOrdered,

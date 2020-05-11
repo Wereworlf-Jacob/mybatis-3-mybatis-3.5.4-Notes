@@ -32,17 +32,19 @@ import org.apache.ibatis.session.RowBounds;
 /**
  * @author Clinton Begin
  */
+//这是一个路由语句处理器，客户端仅需要调用路由提供的查询，编译等方法，再由路由去分发任务，完成crud操作
 public class RoutingStatementHandler implements StatementHandler {
 
+  //将查询和创建预编译语句等所有内容委派给handler来执行
   private final StatementHandler delegate;
 
   public RoutingStatementHandler(Executor executor, MappedStatement ms, Object parameter, RowBounds rowBounds, ResultHandler resultHandler, BoundSql boundSql) {
 
-    switch (ms.getStatementType()) {
+    switch (ms.getStatementType()) { //这个地方，根据类型，不同创建一个不同类型委派类，然后通过委派handler来执行方法
       case STATEMENT:
         delegate = new SimpleStatementHandler(executor, ms, parameter, rowBounds, resultHandler, boundSql);
         break;
-      case PREPARED:
+      case PREPARED: //ms.getStatementType() 在构建statementType的时候，如果未指定statementType，那么默认值 = prepared
         delegate = new PreparedStatementHandler(executor, ms, parameter, rowBounds, resultHandler, boundSql);
         break;
       case CALLABLE:

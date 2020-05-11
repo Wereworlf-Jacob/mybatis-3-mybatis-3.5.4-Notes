@@ -41,7 +41,9 @@ import org.apache.ibatis.session.SqlSession;
 
 /**
  * The default implementation for {@link SqlSession}.
+ * SqlSession接口的默认实现类
  * Note that this class is not Thread-Safe.
+ * 注意：此类事线程不安全的。
  *
  * @author Clinton Begin
  */
@@ -150,11 +152,23 @@ public class DefaultSqlSession implements SqlSession {
     return this.selectList(statement, parameter, RowBounds.DEFAULT);
   }
 
+  /**
+   * 最终查询应该都会调到这个方法来
+   * @param statement Unique identifier matching the statement to use.
+   *                  与要使用的语句集匹配的唯一标识符
+   * @param parameter A parameter object to pass to the statement.
+   *                  要传递给语句的参数对象
+   * @param rowBounds  Bounds to limit object retrieval
+   *                   限制对象检索的边界
+   * @param <E>
+   * @return
+   */
   @Override
   public <E> List<E> selectList(String statement, Object parameter, RowBounds rowBounds) {
     try {
-      //获取映射的语句对象
+      //获取在扫描到包之后，加载xml文件的时候，添加进来的MappedStatement对象
       MappedStatement ms = configuration.getMappedStatement(statement);
+      //通过executor，来执行查询操作
       return executor.query(ms, wrapCollection(parameter), rowBounds, Executor.NO_RESULT_HANDLER);
     } catch (Exception e) {
       throw ExceptionFactory.wrapException("Error querying database.  Cause: " + e, e);

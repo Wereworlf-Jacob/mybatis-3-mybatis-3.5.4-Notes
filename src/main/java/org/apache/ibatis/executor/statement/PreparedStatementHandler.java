@@ -58,10 +58,19 @@ public class PreparedStatementHandler extends BaseStatementHandler {
     ps.addBatch();
   }
 
+  /**
+   * 根据预编译语句对象，执行查询操作，并且返回查询结果
+   * @param statement 预编译语句集
+   * @param resultHandler result结果处理器
+   * @param <E>
+   * @return
+   * @throws SQLException
+   */
   @Override
   public <E> List<E> query(Statement statement, ResultHandler resultHandler) throws SQLException {
     PreparedStatement ps = (PreparedStatement) statement;
     ps.execute();
+    //预编译语句集，执行sql之后，由结果处理器来处理并返回结果
     return resultSetHandler.handleResultSets(ps);
   }
 

@@ -52,6 +52,7 @@ public class XMLIncludeTransformer {
 
   /**
    * Recursively apply includes through all SQL fragments.
+   * 递归调用该方法，把所有sql片段都包含进来，因为有可能会有include标签，所以要把include标签里面的sql也解析出来
    * @param source Include node in DOM tree
    * @param variablesContext Current context for static variables with values
    */

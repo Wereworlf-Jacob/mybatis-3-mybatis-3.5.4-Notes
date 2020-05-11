@@ -115,6 +115,7 @@ public class DefaultSqlSessionFactory implements SqlSessionFactory {
       //创建一个新的事务
       tx = transactionFactory.newTransaction(environment.getDataSource(), level, autoCommit);
       //创建一个执行器，sqlSession要持有一个Executor来执行语句集，获取结果
+      //crud操作，都是通过这个执行器来执行的。，通过读取xml流，来获取到的executor执行器是default execType
       final Executor executor = configuration.newExecutor(tx, execType);
       //通过配置，执行器，是否自动提交，返回一个sqlSession的默认实现
       return new DefaultSqlSession(configuration, executor, autoCommit);
