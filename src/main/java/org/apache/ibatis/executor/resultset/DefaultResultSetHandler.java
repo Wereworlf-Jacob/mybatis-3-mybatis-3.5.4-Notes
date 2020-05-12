@@ -176,7 +176,7 @@ public class DefaultResultSetHandler implements ResultSetHandler {
 
   //
   // HANDLE RESULT SETS
-  //
+  // 查询结果ResultSet 处理器
   @Override
   public List<Object> handleResultSets(Statement stmt) throws SQLException {
     ErrorContext.instance().activity("handling results").object(mappedStatement.getId());
@@ -186,11 +186,13 @@ public class DefaultResultSetHandler implements ResultSetHandler {
     int resultSetCount = 0;
     ResultSetWrapper rsw = getFirstResultSet(stmt);
 
+    //结果映射对象
     List<ResultMap> resultMaps = mappedStatement.getResultMaps();
     int resultMapCount = resultMaps.size();
     validateResultMapsCount(rsw, resultMapCount);
     while (rsw != null && resultMapCount > resultSetCount) {
       ResultMap resultMap = resultMaps.get(resultSetCount);
+      //处理结果集对象
       handleResultSet(rsw, resultMap, multipleResults, null);
       rsw = getNextResultSet(stmt);
       cleanUpAfterHandlingResultSet();
@@ -233,20 +235,28 @@ public class DefaultResultSetHandler implements ResultSetHandler {
     return new DefaultCursor<>(this, resultMap, rsw, rowBounds);
   }
 
+  /**
+   * 获取第一个ResultSet
+   * @param stmt 预编译语句对象
+   * @return
+   * @throws SQLException
+   */
   private ResultSetWrapper getFirstResultSet(Statement stmt) throws SQLException {
     ResultSet rs = stmt.getResultSet();
     while (rs == null) {
-      // move forward to get the first resultset in case the driver
-      // doesn't return the resultset as the first result (HSQLDB 2.1)
+      // move forward to get the first resultset in case the driver doesn't return the resultset as the first result (HSQLDB 2.1)
+      // 向前移动以获得第一个resultset，以防驱动程序没有将resultset作为第一个结果返回(HSQLDB 2.1)
       if (stmt.getMoreResults()) {
         rs = stmt.getResultSet();
       } else {
         if (stmt.getUpdateCount() == -1) {
           // no more results. Must be no resultset
+          // 没有更多的结果。必须没有结果集
           break;
         }
       }
     }
+    //如果查询数据不为空，那么就返回一个ResultSetWrapper结果遍历器
     return rs != null ? new ResultSetWrapper(rs, configuration) : null;
   }
 

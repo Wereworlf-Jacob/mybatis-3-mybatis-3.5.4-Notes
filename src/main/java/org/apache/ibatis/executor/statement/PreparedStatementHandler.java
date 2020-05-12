@@ -71,6 +71,8 @@ public class PreparedStatementHandler extends BaseStatementHandler {
     PreparedStatement ps = (PreparedStatement) statement;
     ps.execute();
     //预编译语句集，执行sql之后，由结果处理器来处理并返回结果
+    //在创建PreparedStatementHandler的时候，会调用configuration类的newDefaultResultSetHandler
+    //来创建一个resultSet处理器
     return resultSetHandler.handleResultSets(ps);
   }
 
