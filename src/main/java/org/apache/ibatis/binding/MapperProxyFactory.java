@@ -40,6 +40,33 @@ public class MapperProxyFactory<T> {
     return mapperInterface;
   }
 
+  /**
+   * 这个地方，保存了一个MethodCache是做什么的呢？
+   * 而在根据COC原则：惯例大于配置
+   * 既然有get方法，在当前类就应该有一个set方法，明显这里面没有set的地方
+   * 那么在哪里set的呢？
+   * 经过代码追踪发现，在该类newInstance的时候，将methodCache传给了MethodProxy
+   * 然后在methodProxy.cachedInvoker的时候，创建了MapperMethodInvoker，将invoker保存到了methodCache中
+   * mybatis使用这种方法应该是用来解决某种问题，但是对于开发来讲，尽量不要使用这种方法。
+   * 对于methodCache用法的猜测如下
+   * 1、Mapper的class信息以及Mapper.xml sqlStatement信息是在xml加载的过程中进行解析的
+   * 2、Mapper相关信息加载后，是保存在一个MapperProxyFactory容器里面的。
+   * 3、而从容器中，获取一个Mapper对象，是在getMapper获取具体Mapper对象的时候进行解析的
+   * 4、getMapper的时候，就从MapperProxyFactory里面获得了一个MapperProxy对象，通过代理对象来执行CURD操作
+   * 5、而执行不同的方法，比如接口存在默认方法的情况，执行Object的方法，执行普通方法，进行的处理都不一样
+   * 6、所以Mybatis创建了不同的MapperMethodInvoker(映射方法执行器)来执行各种不同的方法
+   * 7、而为了提高系统性能，mybatis需要将MapperMethodInvoker缓存起来。
+   * 8、按照面向对象概念，Mapper的MethodInvoker信息应该属于Mapper class 所属。
+   * 9、所以MapperMethodInvoker应该是MapperProxyFactory持有
+   *    （因为Mapper是接口，一个mapper对应一个factory, 每个factory生产不同的mapper，所以应该由Factory持有，然后从mapperFactory中创建MapperProxy的时候，再由MapperProxy持有）
+   * 10、正常应该在MapperProxy执行的时候，就应该从Factory中拿到了MapperMethodInvoker，
+   *     但是因为MapperProxy是每次getMapper时都会创建的，是不一样的。所以MapperProxy无法去缓存MapperMethodInvoker
+   *     而MapperProxyFactory在缓存Mapper信息时，是不会解析interface的Method信息的，因为这个时候还没有MethodProxy对象，
+   *     即使创建了MapperMethodInvoker那么也不能正常运行，这个明显是不符合常理的。
+   *     而解析Method方法又很简单，不像xml解析那么复杂，所以就退而求其次，用Factory来缓存invoker，然后每次调用mapper的方法时，
+   *     在MapperProxy.invoke的时候，再向MethodCache容器进行MapperMethodInvoker的缓存。
+   * @return
+   */
   public Map<Method, MapperMethodInvoker> getMethodCache() {
     return methodCache;
   }
