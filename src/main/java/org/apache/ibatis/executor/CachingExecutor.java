@@ -39,6 +39,7 @@ import org.apache.ibatis.transaction.Transaction;
 public class CachingExecutor implements Executor {
 
   private final Executor delegate;
+  //事务缓存管理器
   private final TransactionalCacheManager tcm = new TransactionalCacheManager();
 
   public CachingExecutor(Executor delegate) {
@@ -54,6 +55,7 @@ public class CachingExecutor implements Executor {
   @Override
   public void close(boolean forceRollback) {
     try {
+      //关闭缓存时，执行回滚或提交的方法
       //issues #499, #524 and #573
       if (forceRollback) {
         tcm.rollback();
@@ -93,12 +95,16 @@ public class CachingExecutor implements Executor {
   public <E> List<E> query(MappedStatement ms, Object parameterObject, RowBounds rowBounds, ResultHandler resultHandler, CacheKey key, BoundSql boundSql)
       throws SQLException {
     Cache cache = ms.getCache();
+    //如果在mapper.xml中<mapper><cache></cache></mapper>发现了cache标签的使用则cache不为空，那么说明该方法启用二级缓存
     if (cache != null) {
       flushCacheIfRequired(ms);
+      //如果方法标签中 userCache = true 并且resultHandler不为空，那么就先从二级缓存中读取内容，如果没有读取到，再查询数据库
+      //select 标签 useCache default true other default false
       if (ms.isUseCache() && resultHandler == null) {
         ensureNoOutParams(ms, boundSql);
+        //此处为mybatis的二级缓存处理，默认二级缓存是不开启的，因为mapper里面一般不会配置cache标签
         @SuppressWarnings("unchecked")
-        List<E> list = (List<E>) tcm.getObject(cache, key);
+        List<E> list = (List<E>) tcm.getObject(cache, key); //加载xml的时候，会构造Cache对象，然后将cache对象包装一层Transactional就变成了带有事务处理的缓存对象
         if (list == null) {
           list = delegate.query(ms, parameterObject, rowBounds, resultHandler, key, boundSql);
           tcm.putObject(cache, key, list); // issue #578 and #116
@@ -163,6 +169,8 @@ public class CachingExecutor implements Executor {
 
   private void flushCacheIfRequired(MappedStatement ms) {
     Cache cache = ms.getCache();
+    //当cache 不是空，同时，需要清空缓存的时候，会刷新缓存
+    //默认情况下，select 标签 flushCache = false 其他标签 flushCache = true;
     if (cache != null && ms.isFlushCacheRequired()) {
       tcm.clear(cache);
     }

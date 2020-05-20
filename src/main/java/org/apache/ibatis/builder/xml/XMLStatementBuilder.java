@@ -68,9 +68,9 @@ public class XMLStatementBuilder extends BaseBuilder {
     //获取标签名称即 insert/update/delete/ 然后转化成大写，然后匹配枚举类的值
     SqlCommandType sqlCommandType = SqlCommandType.valueOf(nodeName.toUpperCase(Locale.ENGLISH));
     boolean isSelect = sqlCommandType == SqlCommandType.SELECT;
-    //是否清空缓存
+    //是否清空缓存   默认 select = false other = true
     boolean flushCache = context.getBooleanAttribute("flushCache", !isSelect);
-    //是否使用缓存
+    //是否使用缓存  默认 select = true， other = false
     boolean useCache = context.getBooleanAttribute("useCache", isSelect);
     //结果是否排序
     boolean resultOrdered = context.getBooleanAttribute("resultOrdered", false);

@@ -113,6 +113,7 @@ public abstract class BaseExecutor implements Executor {
     if (closed) {
       throw new ExecutorException("Executor was closed.");
     }
+    //更新操作，清除一级缓存（删除操作，同样是执行update方法，所以也会删除缓存）
     clearLocalCache();
     return doUpdate(ms, parameter);
   }
@@ -166,11 +167,15 @@ public abstract class BaseExecutor implements Executor {
       throw new ExecutorException("Executor was closed.");
     }
     if (queryStack == 0 && ms.isFlushCacheRequired()) {
+      //如果查询参数标签有flush = true属性，那么一级缓存清除
       clearLocalCache();
     }
     List<E> list;
     try {
       queryStack++;
+      // mybatis 一级缓存查询（默认是开启的） 需要Mapper方法名称一致，SQL字符串一致，Limit，Offset一致，SQL参数一致才能在Map中有相同的映射关系。
+      // Mybatis的SqlSession在Commit和Rollback时会清空缓存。如果当前数据库操作不在事务中，那么每个操作完成后都是默认提交或者回滚的，都会清空缓存，那么缓存就没有效果了
+      // insert，Update，Delete操作会清空缓存
       list = resultHandler == null ? (List<E>) localCache.getObject(key) : null;
       if (list != null) {
         handleLocallyCachedOutputParameters(ms, key, parameter, boundSql);
@@ -261,6 +266,7 @@ public abstract class BaseExecutor implements Executor {
     if (closed) {
       throw new ExecutorException("Cannot commit, transaction is already closed");
     }
+    //事务提交，清除一级缓存
     clearLocalCache();
     flushStatements();
     if (required) {
@@ -272,6 +278,7 @@ public abstract class BaseExecutor implements Executor {
   public void rollback(boolean required) throws SQLException {
     if (!closed) {
       try {
+        //事务回滚，清空一级缓存
         clearLocalCache();
         flushStatements(true);
       } finally {

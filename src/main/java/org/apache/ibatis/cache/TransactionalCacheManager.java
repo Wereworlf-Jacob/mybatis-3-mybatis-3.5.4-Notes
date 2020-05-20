@@ -21,6 +21,7 @@ import java.util.Map;
 import org.apache.ibatis.cache.decorators.TransactionalCache;
 
 /**
+ * 缓存事务管理器，拥有事务提交和回滚的方法
  * @author Clinton Begin
  */
 public class TransactionalCacheManager {

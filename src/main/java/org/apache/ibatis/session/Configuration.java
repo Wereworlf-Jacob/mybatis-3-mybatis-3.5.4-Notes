@@ -632,7 +632,7 @@ public class Configuration {
     } else { //普通的单一执行器，应该默认情况下，用这个执行器比较多
       executor = new SimpleExecutor(this, transaction);
     }
-    if (cacheEnabled) { //可缓存的执行器
+    if (cacheEnabled) { //可缓存的执行器 //除非在configuration.xml配置中指定，cacheEnabled = false 否则，默认开启二级缓存
       executor = new CachingExecutor(executor);
     }
     //还得把执行器扔到interceptorChain里面，这个是一个拦截器链

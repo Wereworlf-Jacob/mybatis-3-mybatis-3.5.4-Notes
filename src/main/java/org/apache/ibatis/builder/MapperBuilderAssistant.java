@@ -285,7 +285,9 @@ public class MapperBuilderAssistant extends BaseBuilder {
         .resultSets(resultSets)
         .resultMaps(getStatementResultMaps(resultMap, resultType, id))
         .resultSetType(resultSetType)
+      //是否清空缓存   默认 select = false (使用缓存)  other = true （不使用缓存）
         .flushCacheRequired(valueOrDefault(flushCache, !isSelect))
+      //是否使用缓存 默认select = true（使用缓存） other = false(不使用缓存)
         .useCache(valueOrDefault(useCache, isSelect))
         .cache(currentCache);
 
